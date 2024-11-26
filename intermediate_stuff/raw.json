@@ -1,0 +1,13 @@
+{
+    "question": [
+      "Which place in Shimla offers a view of distant snow-clad peaks and is associated with the Maharaja of Patiala?",
+      "Name some British-era structures that still stand in Shimla.",
+      "What notable railway line was constructed in Shimla in 1906?"
+    ],
+    "ground_truth": [
+      "Scandal Point",
+      "Viceregal Lodge, Auckland House, Gorton Castle, Peterhoff House, and Gaiety Theater.",
+      "The Kalka-Shimla railway line."
+    ]
+}
+ 

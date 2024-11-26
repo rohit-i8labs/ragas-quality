@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en" data-bs-theme="dark"> <!-- Set dark mode as default -->
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ragas Dashboard</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.7.2/font/bootstrap-icons.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --purple-border: #8a2be2;
+        }
+        body {
+            transition: background-color 0.3s ease, color 0.3s ease;
+        }
+        .bg-gradient-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        .card-hover:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s ease;
+        }
+        .dark-mode-toggle {
+            cursor: pointer;
+            padding: 5px 10px;
+            border-radius: 20px;
+            transition: background-color 0.3s ease;
+        }
+        .dark-mode-toggle:hover {
+            background-color: rgba(255, 255, 255, 0.1);
+        }
+        [data-bs-theme="dark"] {
+            --bs-body-bg: #121212;
+            --bs-body-color: #f8f9fa;
+        }
+        [data-bs-theme="dark"] body {
+            background-color: #121212;
+            color: #f8f9fa;
+        }
+        [data-bs-theme="dark"] .bg-gradient-primary {
+            background: linear-gradient(135deg, #3a3f58 0%, #38304d 100%);
+        }
+        [data-bs-theme="dark"] .card {
+            background-color: #1e1e1e;
+            border-color: var(--purple-border);
+        }
+        [data-bs-theme="dark"] .card-hover:hover {
+            box-shadow: 0 4px 20px rgba(138, 43, 226, 0.2);
+        }
+    </style>
+</head>
+<body class="bg-light">
+    <nav class="navbar navbar-expand-lg navbar-dark bg-gradient-primary">
+        <div class="container-fluid">
+            <a class="navbar-brand fw-bold" href="#">Ragas Dashboard</a>
+            <div class="dark-mode-toggle ms-auto" id="darkModeToggle">
+                <i class="bi bi-moon-fill text-light" id="darkModeIcon"></i> <!-- Change icon to moon for dark mode -->
+            </div>
+        </div>
+    </nav>
+
+    <div class="container mt-4">
+        <div class="row">
+            <div class="col-md-6 mb-4">
+                <div class="card h-100 card-hover">
+                    <div class="card-body text-center">
+                        <h5 class="card-title text-primary">Total Queries</h5>
+                        <p class="display-4 fw-bold text-success" id="totalQueries">{{ total_queries }}</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6 mb-4">
+                <div class="card h-100 card-hover">
+                    <div class="card-body text-center">
+                        <h5 class="card-title text-primary">Total Cost</h5>
+                        <p class="display-4 fw-bold text-danger" id="totalCost">${{ '%.5f'|format(total_cost) }}</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row mt-4">
+            <div class="col-12">
+                <div class="card card-hover">
+                    <div class="card-body">
+                        <h5 class="card-title text-primary mb-4">Query and Cost Trends</h5>
+                        <canvas id="trendChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Function to fetch and update dashboard data
+        function updateDashboard() {
+            fetch('/rag')
+                .then(response => response.text())
+                .then(html => {
+                    const parser = new DOMParser();
+                    const doc = parser.parseFromString(html, 'text/html');
+                    document.getElementById('totalQueries').textContent = doc.getElementById('totalQueries').textContent;
+                    document.getElementById('totalCost').textContent = doc.getElementById('totalCost').textContent;
+                })
+                .catch(error => console.error('Error updating dashboard:', error));
+        }
+
+        // Update dashboard every 5 seconds
+        setInterval(updateDashboard, 5000);
+
+        // Chart initialization (using dummy data for now)
+        const ctx = document.getElementById('trendChart').getContext('2d');
+        const chart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
+                datasets: [{
+                    label: 'Queries',
+                    data: [12, 19, 3, 5, 2, 3],
+                    borderColor: 'rgb(75, 192, 192)',
+                    tension: 0.1
+                }, {
+                    label: 'Cost',
+                    data: [7, 11, 5, 8, 3, 7],
+                    borderColor: 'rgb(255, 99, 132)',
+                    tension: 0.1
+                }]
+            },
+            options: {
+                responsive: true,
+                scales: {
+                    y: {
+                        beginAtZero: true
+                    }
+                }
+            }
+        });
+
+        // Dark mode toggle functionality
+        const darkModeToggle = document.getElementById('darkModeToggle');
+        const darkModeIcon = document.getElementById('darkModeIcon');
+        const htmlElement = document.documentElement;
+
+        darkModeToggle.addEventListener('click', () => {
+            if (htmlElement.getAttribute('data-bs-theme') === 'light') {
+                htmlElement.setAttribute('data-bs-theme', 'dark');
+                darkModeIcon.classList.replace('bi-sun-fill', 'bi-moon-fill');
+            } else {
+                htmlElement.setAttribute('data-bs-theme', 'light');
+                darkModeIcon.classList.replace('bi-moon-fill', 'bi-sun-fill');
+            }
+            updateChartTheme();
+        });
+
+        function updateChartTheme() {
+            const isDarkMode = htmlElement.getAttribute('data-bs-theme') === 'dark';
+            chart.options.scales.x.grid.color = isDarkMode ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)';
+            chart.options.scales.y.grid.color = isDarkMode ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)';
+            chart.options.scales.x.ticks.color = isDarkMode ? '#fff' : '#666';
+            chart.options.scales.y.ticks.color = isDarkMode ? '#fff' : '#666';
+            chart.update();
+        }
+    </script>
+</body>
+</html>

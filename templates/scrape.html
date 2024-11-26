@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Scrape Form</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            background-color: #121212;
+            color: #ffffff;
+        }
+        .form-container {
+            max-width: 400px;
+            margin: 50px auto;
+            background: rgba(255, 255, 255, 0.1);
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0px 4px 15px rgba(0, 0, 0, 0.5);
+        }
+        .result-table {
+            background-color: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            padding: 10px;
+        }
+        /* Loading spinner styling */
+        .spinner-container {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+    </style>
+</head>
+<body>
+    <!-- Loading Spinner -->
+    <div class="spinner-container" id="loadingSpinner">
+        <div class="spinner-border text-light" role="status">
+            <span class="visually-hidden">Loading...</span>
+        </div>
+    </div>
+
+    <div class="form-container">
+        <h2 class="text-center">Scrape Form</h2>
+        <form id="scrapeForm" action="/scrape" method="GET">
+            <div class="mb-3">
+                <label for="name" class="form-label">Enter Stock Name</label>
+                <input type="text" class="form-control" id="name" name="name" required>
+            </div>
+            <button type="submit" class="btn btn-primary w-100 mb-2">Submit</button>
+            <button type="button" class="btn btn-danger w-100" id="resetButton">Reset</button>
+        </form>
+    </div>
+
+    {% if result %}
+    <div class="result-table mt-5 container" id="resultTable">
+        <h4 class="text-center">Scrape Result</h4>
+        <table class="table table-dark table-striped">
+            <thead>
+                <tr>
+                    <th scope="col">Key</th>
+                    <th scope="col">Value</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for key, value in result.items() %}
+                <tr>
+                    <td>{{ key }}</td>
+                    <td>{{ value }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% endif %}
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        document.getElementById('scrapeForm').addEventListener('submit', function(event) {
+            // Show the loading spinner
+            document.getElementById('loadingSpinner').style.display = 'flex';
+        });
+        
+        window.addEventListener('pageshow', function(event) {
+            // Hide the loading spinner when the page is reloaded with results
+            document.getElementById('loadingSpinner').style.display = 'none';
+        });
+
+        // Reset button functionality
+        document.getElementById('resetButton').addEventListener('click', function() {
+            // Clear the form
+            document.getElementById('name').value = '';
+            // Hide the result table if it exists
+            const resultTable = document.getElementById('resultTable');
+            if (resultTable) {
+                resultTable.style.display = 'none';
+            }
+        });
+    </script>
+</body>
+</html>

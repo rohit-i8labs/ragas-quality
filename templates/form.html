@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GitHub Repo Analyzer</title>
+    <link rel="icon" href="https://github.com/fluidicon.png" type="image/png">
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            background-color: #1a1a1a;
+            color: #ffffff;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+
+        .container {
+            background-color: #2a2a2a;
+            padding: 2rem;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            width: 100%;
+            max-width: 600px;
+        }
+
+        h1 {
+            text-align: center;
+            margin-bottom: 1.5rem;
+            color: #61dafb;
+        }
+
+        form {
+            display: flex;
+            flex-direction: column;
+        }
+
+        label {
+            margin-bottom: 0.5rem;
+            font-weight: bold;
+        }
+
+        input {
+            padding: 0.75rem;
+            margin-bottom: 1rem;
+            border: none;
+            border-radius: 4px;
+            background-color: #3a3a3a;
+            color: #ffffff;
+        }
+
+        input:focus {
+            outline: 2px solid #61dafb;
+        }
+
+        .button-group {
+            display: flex;
+            justify-content: space-between;
+            gap: 1rem;
+        }
+
+        button {
+            padding: 0.75rem;
+            background-color: #61dafb;
+            color: #1a1a1a;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: background-color 0.3s ease;
+            flex: 1;
+        }
+
+        button:hover {
+            background-color: #4fa8d5;
+        }
+
+        button#resetBtn {
+            background-color: #ff6b6b;
+        }
+
+        button#resetBtn:hover {
+            background-color: #ff4757;
+        }
+
+        #loading {
+            display: none;
+            text-align: center;
+            margin-top: 1rem;
+        }
+
+        .spinner {
+            border: 4px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top: 4px solid #61dafb;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        #result {
+            margin-top: 1rem;
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 1rem;
+        }
+
+        th, td {
+            padding: 0.75rem;
+            text-align: left;
+            border-bottom: 1px solid #4a4a4a;
+        }
+
+        th {
+            background-color: #3a3a3a;
+            font-weight: bold;
+        }
+
+        tr:nth-child(even) {
+            background-color: #333333;
+        }
+
+        @media (max-width: 480px) {
+            .container {
+                padding: 1.5rem;
+            }
+        }
+
+        .main-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 1rem;
+            background-color: #2a2a2a;
+            color: #ffffff;
+        }
+        
+        .main-table td, .main-table th {
+            padding: 0.75rem;
+            text-align: left;
+            border: 1px solid #4a4a4a;
+        }
+        
+        .info-icon {
+            font-size: 1rem;
+            margin-left: 0.5rem;
+            color: #3498db;
+            cursor: pointer;
+        }
+        
+        .dropdown-container {
+            margin-top: 0.5rem;
+            background-color: #3a3a3a;
+            padding: 0.5rem;
+            border-radius: 5px;
+            display: none; /* Ensures dropdown is hidden initially */
+            position: relative;
+            z-index: 1;
+            width: 90%;
+        }
+
+        .info-icon:hover {
+            color: #61dafb; /* Hover color to show it’s clickable */
+        }
+
+        
+        .sub-table {
+            width: 90%;
+            background-color: #3a3a3a;
+            border-collapse: collapse;
+            margin-top: 0.5rem;
+        }
+        
+        .sub-table td {
+            padding: 0.5rem;
+            border: 1px solid #4a4a4a;
+            color: #b3b3b3;
+        }
+        
+        .sub-table td:first-child {
+            color: #ffffff;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>GitHub Repo Analyzer</h1>
+        <form id="analyzeForm">
+            <label for="repoUrl">GitHub Repo URL:</label>
+            <input type="url" id="repoUrl" name="repoUrl" required placeholder="https://github.com/username/repo">
+            
+            <label for="accessToken">Access Token (optional):</label>
+            <input type="password" id="accessToken" name="accessToken" placeholder="For private repositories">
+            
+            <div class="button-group">
+                <button type="submit">Analyze Repo</button>
+                <button type="button" id="resetBtn">Reset</button>
+            </div>
+        </form>
+        <div id="loading">
+            <div class="spinner"></div>
+            <p>Analyzing repository...</p>
+        </div>
+        <div id="result"></div>
+    </div>
+
+    <script>
+        // Function to save form data to localStorage
+        function saveFormData() {
+            localStorage.setItem('repoUrl', document.getElementById('repoUrl').value);
+            localStorage.setItem('accessToken', document.getElementById('accessToken').value);
+        }
+
+        // Function to load form data from localStorage
+        function loadFormData() {
+            const repoUrl = localStorage.getItem('repoUrl');
+            const accessToken = localStorage.getItem('accessToken');
+            
+            if (repoUrl) document.getElementById('repoUrl').value = repoUrl;
+            if (accessToken) document.getElementById('accessToken').value = accessToken;
+        }
+
+        // Function to create a table from JSON data
+        function createTableFromJSON(data) {
+            const table = document.createElement('table');
+            const tbody = document.createElement('tbody');
+            table.classList.add('main-table');
+
+            data.forEach((item) => {
+                // Check if the dictionary has more than one key and apply a different style
+                const hasMultipleKeys = Object.keys(item).length > 1;
+                const rowColorClass = hasMultipleKeys ? 'highlight-row' : 'normal-row';
+
+                for (const [key, value] of Object.entries(item)) {
+                    const row = document.createElement('tr');
+                    row.classList.add(rowColorClass);
+
+                    // Key cell
+                    const keyCell = document.createElement('td');
+                    keyCell.textContent = key;
+                    row.appendChild(keyCell);
+
+                    // Value cell
+                    const valueCell = document.createElement('td');
+
+                    if (typeof value === 'number' || typeof value === 'boolean') {
+                        valueCell.textContent = value;
+                    } else if (Array.isArray(value)) {
+                        // Display each item in the array on a new line
+                        valueCell.innerHTML = value.map(filePath => `<div>${filePath}</div>`).join('');
+                    } else {
+                        valueCell.textContent = JSON.stringify(value);
+                    }
+
+                    row.appendChild(valueCell);
+                    tbody.appendChild(row);
+                }
+            });
+
+            table.appendChild(tbody);
+            return table;
+        }
+        
+
+        // Load saved form data on page load
+        window.addEventListener('load', loadFormData);
+
+        document.getElementById('analyzeForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const repoUrl = document.getElementById('repoUrl').value;
+            const accessToken = document.getElementById('accessToken').value;
+            
+            // Save form data before submitting
+            saveFormData();
+            
+            document.getElementById('loading').style.display = 'block';
+            document.getElementById('result').innerHTML = '';
+            
+            fetch('http://localhost:5000/git', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    repoUrl: repoUrl,
+                    accessToken: accessToken
+                }),
+            })
+            .then(response => response.json())
+            .then(data => {
+                // Create and display the table
+                const table = createTableFromJSON(data);
+                document.getElementById('result').appendChild(table);
+            })
+            .catch((error) => {
+                console.error('Error:', error);
+                document.getElementById('result').textContent = 'An error occurred while analyzing the repository. Please try again.';
+            })
+            .finally(() => {
+                document.getElementById('loading').style.display = 'none';
+            });
+        });
+
+        // Reset button functionality
+        document.getElementById('resetBtn').addEventListener('click', function() {
+            document.getElementById('repoUrl').value = '';
+            document.getElementById('accessToken').value = '';
+            localStorage.removeItem('repoUrl');
+            localStorage.removeItem('accessToken');
+            document.getElementById('result').innerHTML = '';
+        });
+
+        // Save form data when inputs change
+        document.getElementById('repoUrl').addEventListener('input', saveFormData);
+        document.getElementById('accessToken').addEventListener('input', saveFormData);
+    </script>
+</body>
+</html>
